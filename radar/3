@@ -1,0 +1,92 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+char * ppmfile = "Bg_full.ppm";
+char * hfile = "sv_radar.h";
+char * compositefile = "RvcCompositePPM";
+FILE *wpFile;
+FILE *compositepFile;
+
+int composite(char *file)
+{
+	FILE *pFile;
+	char header[20];
+	int imgWidth, imgHeight;
+	char *pimgArgbData_tmp = NULL;
+	char *pimgArgbData_back = NULL;
+
+	pFile = fopen(file, "rb");
+	if(pFile == NULL) {
+  		printf("open file[%s] failed\n",file);
+		return 1;
+	}
+
+	// get "P6"
+	fgets(header, 20, pFile);
+
+	// get "width height"
+	fgets(header, 20, pFile);
+	sscanf(header, "%d %d\n", &imgWidth, &imgHeight);
+	printf("imgWidth is %d, imgHeight is %d \n",imgWidth,imgHeight);
+
+	// get "255"
+	fgets(header, 20, pFile);
+	// get rgb data
+	pimgArgbData_tmp = calloc(1,imgWidth*imgHeight*4);
+	pimgArgbData_back = pimgArgbData_tmp;
+	fread(pimgArgbData_tmp, imgWidth*imgHeight*4, 1, pFile);
+
+	fwrite(pimgArgbData_back, imgWidth*imgHeight*4, 1, compositepFile);
+
+	return 1;
+}
+
+
+int main()
+{
+	char header[20];
+
+	int ret = 0;
+	int imgWidth, imgHeight;
+	char *pimgArgbData_tmp = NULL;
+	char *pimgArgbData_back = NULL;
+	int i;
+	unsigned char tmp;
+
+        compositepFile = fopen(compositefile, "wb");
+        if( compositepFile == NULL) {
+                printf("open file[%s] failed\n",compositefile);
+                return 1;
+        }
+
+#if 0
+	wpFile = fopen(hfile, "w+");
+	if(wpFile == NULL) {
+  		printf("open file[%s] failed\n",hfile);
+		return 1;
+	}
+
+	fprintf(wpFile,"\n "
+			"static unsigned char sv_radar_data[] __initdata = { \n");
+
+	fprintf(wpFile,"\t");
+	for(i = 0; i < imgWidth*imgHeight*4; i++)
+	{
+	//	if(i%4 == 0)
+			tmp = *((char *)pimgArgbData_back+i);
+		fprintf(wpFile,"0x%02X,",tmp);
+		if(i%8 == 7)
+			fprintf(wpFile,"\n\t");
+				
+	}
+
+	fprintf(wpFile," \n}; \n");
+
+#endif	
+	composite(ppmfile);
+	
+	fclose(compositepFile);
+
+	return ret;
+
+}
